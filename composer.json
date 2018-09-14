@@ -1,0 +1,19 @@
+{
+    "name": "alykov/laracron",
+    "require": {
+        "illuminate/console": "^5.7",
+        "illuminate/container": "^5.7",
+        "illuminate/events": "^5.7",
+        "illuminate/cache": "^5.7",
+        "illuminate/filesystem": "^5.7",
+        "dragonmantank/cron-expression": "^2.2",
+        "symfony/console": "^4.1",
+        "symfony/process": "^4.1"
+    },
+    "authors": [
+        {
+            "name": "Andrew",
+            "email": "alykov@getintent.com"
+        }
+    ]
+}
