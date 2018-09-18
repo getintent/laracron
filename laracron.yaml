@@ -1,0 +1,22 @@
+environment: development
+
+basePath: . # relative to Phar file
+
+cache.default: redis
+cache.prefix: laracron
+
+cache.stores.file:
+  driver: file
+  path: cache
+
+cache.store.redis:
+
+
+cache.stores.redis:
+  driver: redis
+
+
+scheduledJobs:
+
+  everyMinute:
+    - "app/console list"
