@@ -1,0 +1,18 @@
+{
+  "environment": "development",
+  "basePath": ".",
+  "cache.default": "file",
+  "cache.prefix": "laracron",
+  "cache.stores.file": {
+    "driver": "file",
+    "path": "cache"
+  },
+  "cache.stores.redis": {
+    "driver": "redis"
+  },
+  "scheduledJobs": {
+    "everyMinute": [
+      "app/console list"
+    ]
+  }
+}

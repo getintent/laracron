@@ -1,5 +1,5 @@
 {
-    "name": "alykov/laracron",
+    "name": "trig/laracron",
     "require": {
         "illuminate/console": "^5.7",
         "illuminate/container": "^5.7",
@@ -8,8 +8,7 @@
         "illuminate/filesystem": "^5.7",
         "dragonmantank/cron-expression": "^2.2",
         "symfony/console": "^4.1",
-        "symfony/process": "^4.1",
-        "symfony/yaml": "^4.1"
+        "symfony/process": "^4.1"
     },
     "autoload": {
         "psr-4":{
@@ -18,8 +17,8 @@
     },
     "authors": [
         {
-            "name": "Andrew",
-            "email": "alykov@getintent.com"
+            "name": "Andrey",
+            "email": "andrew.lykov@yandex.ru"
         }
     ]
 }

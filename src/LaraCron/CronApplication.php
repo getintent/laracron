@@ -2,17 +2,17 @@
 
 namespace Trig\LaraCron;
 
+use Illuminate\Cache\CacheManager;
+use Illuminate\Console\Application;
+use Illuminate\Console\Scheduling\CacheEventMutex;
 use Illuminate\Console\Scheduling\CacheSchedulingMutex;
+use Illuminate\Console\Scheduling\EventMutex;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Console\Scheduling\ScheduleRunCommand;
 use Illuminate\Console\Scheduling\SchedulingMutex;
-use Illuminate\Console\Scheduling\CacheEventMutex;
-use Illuminate\Console\Scheduling\EventMutex;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Events\Dispatcher;
-use Illuminate\Console\Application;
-use Illuminate\Cache\CacheManager;
 use Illuminate\Filesystem\Filesystem;
 
 class CronApplication implements ApplicationContract
@@ -58,7 +58,20 @@ class CronApplication implements ApplicationContract
     public function basePath()
     {
         $this->checkConfigPath('basePath');
+
         return $this->container['config']['basePath'];
+    }
+
+    /**
+     * @param $path
+     */
+    private function checkConfigPath(string $path)
+    {
+        $compiledPath = sprintf('["%s"]', implode('"]["', explode('.', $path)));
+        $result = eval(sprintf('return $this->container["config"]%s ?? null;', $compiledPath));
+        if (null === $result) {
+            throw new \RuntimeException("Configuration path '$path' is not exists");
+        }
     }
 
     /**
@@ -69,6 +82,7 @@ class CronApplication implements ApplicationContract
     public function environment()
     {
         $this->checkConfigPath('environment');
+
         return $this->container['config']['environment'];
     }
 
@@ -140,24 +154,40 @@ class CronApplication implements ApplicationContract
      */
     public function boot()
     {
-        foreach($this->bootingCallbacks as $callback){
+        foreach ($this->bootingCallbacks as $callback) {
             $callback($this);
         }
-        $this->bind(Application::class, function (Container $container) {
-            return new Application($container, $container->make(Dispatcher::class), self::VERSION);
-        }, true);
+        $this->bind(
+            Application::class,
+            function (Container $container) {
+                return new Application($container, $container->make(Dispatcher::class), self::VERSION);
+            },
+            true
+        );
 
-        $this->bind(CacheManager::class, function (Container $container) {
-            return new CacheManager($container);
-        }, true);
+        $this->bind(
+            CacheManager::class,
+            function (Container $container) {
+                return new CacheManager($container);
+            },
+            true
+        );
 
-        $this->bind(EventMutex::class, function (Container $container) {
-            return new CacheEventMutex($container->get(CacheManager::class));
-        }, true);
+        $this->bind(
+            EventMutex::class,
+            function (Container $container) {
+                return new CacheEventMutex($container->get(CacheManager::class));
+            },
+            true
+        );
 
-        $this->bind(SchedulingMutex::class, function (Container $container) {
-            return new CacheSchedulingMutex($container->get(CacheManager::class));
-        }, true);
+        $this->bind(
+            SchedulingMutex::class,
+            function (Container $container) {
+                return new CacheSchedulingMutex($container->get(CacheManager::class));
+            },
+            true
+        );
 
         $this->bind(Schedule::class, null, true);
         $this->bind(ScheduleRunCommand::class, null, true);
@@ -170,12 +200,57 @@ class CronApplication implements ApplicationContract
         $app = $this->get(Application::class);
         $app->add($scheduledRun);
         $scheduledRun->setLaravel($this);
-        $app->setDefaultCommand($scheduledRun->getName());
 
         $this->registerScheduledCommands();
-        foreach($this->bootedCallbacks as $callback){
+        foreach ($this->bootedCallbacks as $callback) {
             $callback($this);
         }
+    }
+
+    /**
+     * Register a binding with the container.
+     *
+     * @param  string $abstract
+     * @param  \Closure|string|null $concrete
+     * @param  bool $shared
+     * @return void
+     */
+    public function bind($abstract, $concrete = null, $shared = false)
+    {
+        $this->container->bind($abstract, $concrete, $shared);
+    }
+
+    /**
+     * Alias a type to a different name.
+     *
+     * @param  string $abstract
+     * @param  string $alias
+     * @return void
+     */
+    public function alias($abstract, $alias)
+    {
+        $this->container->alias($abstract, $alias);
+    }
+
+    /**
+     * Finds an entry of the container by its identifier and returns it.
+     *
+     * @param string $id Identifier of the entry to look for.
+     *
+     * @throws \Psr\Container\NotFoundExceptionInterface  No entry was found for **this** identifier.
+     * @throws \Psr\Container\ContainerExceptionInterface Error while retrieving the entry.
+     *
+     * @return mixed Entry.
+     */
+    public function get($id)
+    {
+        return $this->container->get($id);
+    }
+
+    private function registerScheduledCommands()
+    {
+        $this->checkConfigPath('scheduledJobs');
+
     }
 
     /**
@@ -232,18 +307,6 @@ class CronApplication implements ApplicationContract
     }
 
     /**
-     * Alias a type to a different name.
-     *
-     * @param  string $abstract
-     * @param  string $alias
-     * @return void
-     */
-    public function alias($abstract, $alias)
-    {
-        $this->container->alias($abstract, $alias);
-    }
-
-    /**
      * Assign a set of tags to a given binding.
      *
      * @param  array|string $abstracts
@@ -264,19 +327,6 @@ class CronApplication implements ApplicationContract
     public function tagged($tag)
     {
         return $this->container->tagged($tag);
-    }
-
-    /**
-     * Register a binding with the container.
-     *
-     * @param  string $abstract
-     * @param  \Closure|string|null $concrete
-     * @param  bool $shared
-     * @return void
-     */
-    public function bind($abstract, $concrete = null, $shared = false)
-    {
-        $this->container->bind($abstract, $concrete, $shared);
     }
 
     /**
@@ -415,21 +465,6 @@ class CronApplication implements ApplicationContract
     }
 
     /**
-     * Finds an entry of the container by its identifier and returns it.
-     *
-     * @param string $id Identifier of the entry to look for.
-     *
-     * @throws \Psr\Container\NotFoundExceptionInterface  No entry was found for **this** identifier.
-     * @throws \Psr\Container\ContainerExceptionInterface Error while retrieving the entry.
-     *
-     * @return mixed Entry.
-     */
-    public function get($id)
-    {
-        return $this->container->get($id);
-    }
-
-    /**
      * Returns true if the container can return an entry for the given identifier.
      * Returns false otherwise.
      *
@@ -443,24 +478,6 @@ class CronApplication implements ApplicationContract
     public function has($id)
     {
         return $this->container->has($id);
-    }
-
-    /**
-     * @param $path
-     */
-    private function checkConfigPath(string $path)
-    {
-        $compiledPath = sprintf('["%s"]', implode('"]["', explode('.', $path)));
-        $result = eval(sprintf('return $this->container["config"]%s ?? null;', $compiledPath));
-        if (null === $result) {
-            throw new \RuntimeException("Configuration path '$path' is not exists");
-        }
-    }
-
-    private function registerScheduledCommands()
-    {
-        $this->checkConfigPath('scheduledJobs');
-
     }
 
 }
