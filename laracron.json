@@ -1,5 +1,15 @@
 {
-  "environment": "development",
+  "scheduledJobs": {
+    "everyMinute": [
+      "app/console list",
+      "app/console"
+    ],
+    "*/10 * * * *": [
+      "echo '*/10 * * * *'"
+    ]
+  },
+
+  "log file": "php://stdout",
   "basePath": ".",
   "cache.default": "file",
   "cache.prefix": "laracron",
@@ -9,10 +19,5 @@
   },
   "cache.stores.redis": {
     "driver": "redis"
-  },
-  "scheduledJobs": {
-    "everyMinute": [
-      "app/console list"
-    ]
   }
 }

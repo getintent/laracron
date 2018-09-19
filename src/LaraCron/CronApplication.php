@@ -17,7 +17,7 @@ use Illuminate\Filesystem\Filesystem;
 
 class CronApplication implements ApplicationContract
 {
-    const VERSION = '0.1.0';
+    const VERSION = '5.6';
 
     /**
      * @var Container
@@ -37,6 +37,7 @@ class CronApplication implements ApplicationContract
     public function __construct(array $config)
     {
         $this->container = Container::getInstance();
+        $config['basePath'] = realpath($config['basePath']);
         $this->container['config'] = $config;
     }
 
@@ -81,9 +82,7 @@ class CronApplication implements ApplicationContract
      */
     public function environment()
     {
-        $this->checkConfigPath('environment');
-
-        return $this->container['config']['environment'];
+        return '';
     }
 
     /**

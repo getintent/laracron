@@ -21,7 +21,7 @@ class InitCommand extends Command
 
     public function handle()
     {
-        
+        $this->output->comment('todo...');
     }
 
     /**
