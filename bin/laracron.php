@@ -2,82 +2,52 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
+use Illuminate\Console\OutputStyle;
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Trig\LaraCron\Exception\ExitCommandException;
 use Trig\LaraCron\ExitCodes;
+use Illuminate\Console\Scheduling\Schedule;
 
-$io = new \Illuminate\Console\OutputStyle(
-    new \Symfony\Component\Console\Input\ArgvInput(),
-    new \Symfony\Component\Console\Output\ConsoleOutput()
-);
+$configFile = realpath(__DIR__.'/../laracron.json');
 
-$configFile = realpath(getcwd()).'/laracron.json';
-
-if (!$configFile || !file_exists($configFile)) {
-    $io->error("Please initialize configuration with <comment>init</comment> command.");
-    exit(ExitCodes::ERROR_CONFIG_NOT_FOUND);
-}
-
-if (!is_readable($configFile)) {
-    $io->error("Provided file <comment>{$configFile}</comment> is not readable.");
-    exit(ExitCodes::ERROR_CONFIG_NOT_READABLE);
-}
-
-$config = json_decode(file_get_contents($configFile), true);
-if (JSON_ERROR_NONE !== json_last_error()) {
-    $io->error("JSON parse error in <comment>{$configFile}</comment>");
-    exit(ExitCodes::ERROR_CONFIG_JSON_ERROR);
-}
-
-$cronApp = new \Trig\LaraCron\CronApplication($config);
-
-$cronApp->booting(
-    function (\Trig\LaraCron\CronApplication $app) use ($config, $io) {
-        if ('redis' === ($config['cache.default'] ?? null)) {
-            if (!class_exists('Redis')) {
-                $io->error('Please install Redis extension, to use with provided configuration');
-            }
-        }
-    }
-);
-
-$cronApp->booted(
-    function (\Trig\LaraCron\CronApplication $app) use ($io, $config) {
-        $scheduler = $app->get(\Illuminate\Console\Scheduling\Schedule::class);
-        foreach ($config['scheduledJobs'] ?? [] as $definition => $commands) {
-            foreach ($commands as $command) {
-                $event = $scheduler->exec($command)->name(
-                    implode(
-                        '.',
-                        [
-                            'laracron',
-                            crc32($definition.$command),
-                            preg_replace('/-{2,}/', '-', preg_replace('/[^\w]/', '-', $definition.'/'.$command)),
-                        ]
-                    )
-                )->onOneServer();
-
-                $isCronDefinition = false !== strpos($definition, ' ');
-                if ($isCronDefinition) {
-                    $event->cron($definition);
-                } elseif (method_exists($event, $definition)) {
-                    $event->{$definition}();
-                } else {
-                    $io->writeln("<fg=red>ERROR:</> Seems that command schedule definition <comment>{$definition}</comment> is wrong for <comment>{$command}</comment> command");
-                    exit(ExitCodes::ERROR_CMD_DEFINITION);
-                }
-            }
-        }
-
-        $console = $app->get(\Illuminate\Console\Application::class);
-        $console->add(new \Trig\LaraCron\Command\InitCommand());
-        $console->add(new \Trig\LaraCron\Command\BuildPharCommand());
-    }
+$io = new OutputStyle(
+    new ArgvInput(),
+    new ConsoleOutput()
 );
 
 try {
+    $cronApp = new \Trig\LaraCron\CronApplication($configFile);
+
+    $cronApp->booting(
+        function (\Trig\LaraCron\CronApplication $app) use ($io) {
+            if ('redis' === ($app->get('config')['cache.default'] ?? null) && !class_exists('Redis')) {
+                $io->writeln('<fg=red>ERROR:</> Please install Redis extension, to use with provided configuration');
+            }
+        }
+    );
+
+    $cronApp->booted(
+        function (\Trig\LaraCron\CronApplication $app)use ($cronApp) {
+            $console = $app->get(\Illuminate\Console\Application::class);
+            $console->add(new \Trig\LaraCron\Command\InitCommand());
+            $console->add(new \Trig\LaraCron\Command\BuildPharCommand());
+            $scheduleRun = new \Trig\LaraCron\Command\ScheduleRunCommand($app->get(Schedule::class));
+            $console->add($scheduleRun);
+            $scheduleRun->setLaravel($cronApp);
+        }
+    );
+
     $cronApp->boot();
-    $cronApp->get(\Illuminate\Console\Application::class)->run();
+    $exitCode = $cronApp->get(\Illuminate\Console\Application::class)->run();
+    exit($exitCode);
+
 } catch (\Throwable $e) {
-    $io->error($e->getMessage());
+    $io->error(sprintf('[%s] %s', get_class($e), $e->getMessage()));
     $io->listing(explode("\n", $e->getTraceAsString()));
+
+    if ($e instanceof ExitCommandException) {
+        exit($e->getCode());
+    }
     exit(ExitCodes::ERROR_GENERAL);
 }

@@ -1,24 +1,27 @@
 {
-    "name": "trig/laracron",
-    "require": {
-        "illuminate/console": "^5.7",
-        "illuminate/container": "^5.7",
-        "illuminate/events": "^5.7",
-        "illuminate/cache": "^5.7",
-        "illuminate/filesystem": "^5.7",
-        "dragonmantank/cron-expression": "^2.2",
-        "symfony/console": "^4.1",
-        "symfony/process": "^4.1"
+  "name": "trig/laracron",
+  "require": {
+    "illuminate/console": "^5.7",
+    "illuminate/container": "^5.7",
+    "illuminate/events": "^5.7",
+    "illuminate/cache": "^5.7",
+    "illuminate/filesystem": "^5.7",
+    "dragonmantank/cron-expression": "^2.2",
+    "symfony/console": "^4.1",
+    "symfony/process": "^4.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Trig\\": "src//"
     },
-    "autoload": {
-        "psr-4":{
-            "Trig\\": "src//"
-        }
-    },
-    "authors": [
-        {
-            "name": "Andrey",
-            "email": "andrew.lykov@yandex.ru"
-        }
+    "files": [
+      "src/functions.php"
     ]
+  },
+  "authors": [
+    {
+      "name": "Andrey",
+      "email": "andrew.lykov@yandex.ru"
+    }
+  ]
 }

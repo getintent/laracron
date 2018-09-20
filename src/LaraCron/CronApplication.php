@@ -4,6 +4,7 @@ namespace Trig\LaraCron;
 
 use Illuminate\Cache\CacheManager;
 use Illuminate\Console\Application;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Console\Scheduling\CacheEventMutex;
 use Illuminate\Console\Scheduling\CacheSchedulingMutex;
 use Illuminate\Console\Scheduling\EventMutex;
@@ -14,6 +15,9 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Trig\LaraCron\Exception\ExitCommandException;
 
 class CronApplication implements ApplicationContract
 {
@@ -34,11 +38,21 @@ class CronApplication implements ApplicationContract
      */
     private $bootedCallbacks = [];
 
-    public function __construct(array $config)
+    /**
+     * CronApplication constructor.
+     * @param string $configFile
+     * @throws ExitCommandException
+     */
+    public function __construct(string $configFile)
     {
         $this->container = Container::getInstance();
-        $config['basePath'] = realpath($config['basePath']);
-        $this->container['config'] = $config;
+        $this->initializeBindings();
+
+        $this->container['config'] = $this->getConfig($configFile);
+
+        foreach ($this->bootingCallbacks as $callback) {
+            $callback($this);
+        }
     }
 
     /**
@@ -153,48 +167,6 @@ class CronApplication implements ApplicationContract
      */
     public function boot()
     {
-        foreach ($this->bootingCallbacks as $callback) {
-            $callback($this);
-        }
-        $this->bind(
-            Application::class,
-            function (Container $container) {
-                return new Application($container, $container->make(Dispatcher::class), self::VERSION);
-            },
-            true
-        );
-
-        $this->bind(
-            CacheManager::class,
-            function (Container $container) {
-                return new CacheManager($container);
-            },
-            true
-        );
-
-        $this->bind(
-            EventMutex::class,
-            function (Container $container) {
-                return new CacheEventMutex($container->get(CacheManager::class));
-            },
-            true
-        );
-
-        $this->bind(
-            SchedulingMutex::class,
-            function (Container $container) {
-                return new CacheSchedulingMutex($container->get(CacheManager::class));
-            },
-            true
-        );
-
-        $this->bind(Schedule::class, null, true);
-        $this->bind(ScheduleRunCommand::class, null, true);
-
-        $this->bind(Filesystem::class, null, true);
-        $this->alias(Filesystem::class, 'files');
-
-
         $scheduledRun = $this->get(ScheduleRunCommand::class);
         $app = $this->get(Application::class);
         $app->add($scheduledRun);
@@ -477,6 +449,88 @@ class CronApplication implements ApplicationContract
     public function has($id)
     {
         return $this->container->has($id);
+    }
+
+    /**
+     * @param string $configFile
+     * @return array
+     * @throws ExitCommandException
+     */
+    private function getConfig(string $configFile): array
+    {
+        $io = $this->get(OutputStyle::class);
+
+        if (!$configFile || !file_exists($configFile)) {
+            $io->error("Please initialize configuration with <comment>init</comment> command.");
+            throw new ExitCommandException('ERROR_CONFIG_NOT_FOUND', ExitCodes::ERROR_CONFIG_NOT_FOUND);
+        }
+
+        if (!is_readable($configFile)) {
+            $io->error("Provided file <comment>{$configFile}</comment> is not readable.");
+            throw new ExitCommandException('ERROR_CONFIG_NOT_READABLE', ExitCodes::ERROR_CONFIG_NOT_READABLE);
+        }
+
+        $config = json_decode(file_get_contents($configFile), true);
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            $io->error("JSON parse error in <comment>{$configFile}</comment>");
+            throw new ExitCommandException('ERROR_CONFIG_JSON_ERROR', ExitCodes::ERROR_CONFIG_JSON_ERROR);
+        }
+
+        $config['basePath'] = realpath(__DIR__ . '/../../');
+
+        return $config;
+    }
+
+    private function initializeBindings()
+    {
+        $this->bind(
+            OutputStyle::class,
+            function () {
+                return new OutputStyle(
+                    new ArgvInput(),
+                    new ConsoleOutput()
+                );
+            },
+            true
+        );
+
+        $this->bind(
+            Application::class,
+            function (Container $container) {
+                return new Application($container, $container->make(Dispatcher::class), self::VERSION);
+            },
+            true
+        );
+
+        $this->bind(
+            CacheManager::class,
+            function (Container $container) {
+                return new CacheManager($container);
+            },
+            true
+        );
+
+        $this->bind(
+            EventMutex::class,
+            function (Container $container) {
+                return new CacheEventMutex($container->get(CacheManager::class));
+            },
+            true
+        );
+
+        $this->bind(
+            SchedulingMutex::class,
+            function (Container $container) {
+                return new CacheSchedulingMutex($container->get(CacheManager::class));
+            },
+            true
+        );
+
+        $this->bind(Schedule::class, null, true);
+        $this->bind(ScheduleRunCommand::class, null, true);
+
+        $this->bind(Filesystem::class, null, true);
+        $this->alias(Filesystem::class, 'files');
     }
 
 }
