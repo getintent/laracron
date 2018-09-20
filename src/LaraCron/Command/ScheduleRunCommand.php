@@ -2,16 +2,19 @@
 
 namespace Trig\LaraCron\Command;
 
-use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Console\Scheduling\ScheduleRunCommand as ParentCommand;
+use Symfony\Component\Finder\Finder;
 use Trig\LaraCron\Exception\ExitCommandException;
+use Trig\LaraCron\ExitCodes;
 
 class ScheduleRunCommand extends ParentCommand
 {
 
     public function handle()
     {
-        foreach ($this->getLaravel()->get('config')['scheduledJobs'] ?? [] as $definition => $commands) {
+        $config = $this->getLaravel()->get('config');
+        foreach ($config['scheduledJobs'] ?? [] as $definition => $commands) {
             foreach ($commands as $command) {
                 $event = $this->schedule->exec($command)
                     ->name($this->getUniqueName($definition, $command))
@@ -29,6 +32,8 @@ class ScheduleRunCommand extends ParentCommand
                 }
             }
         }
+
+        $this->registerCacheGarbageCollector();
 
         parent::handle();
     }
@@ -48,5 +53,36 @@ class ScheduleRunCommand extends ParentCommand
                 preg_replace('/-{2,}/', '-', preg_replace('/[^\w]/', '-', $definition.'/'.$command)),
             ]
         );
+    }
+
+    private function registerCacheGarbageCollector()
+    {
+        $config = $this->getLaravel()->get('config');
+        if ('file' !== $config['cache.default']) {
+            return;
+        }
+        $cacheDir = $config['cache.stores.file']['path'] ?? null;
+        if (null === $cacheDir) {
+            throw new ExitCommandException('ERROR_CACHE_DIRECTORY_NOT_DEFINED', ExitCodes::ERROR_CACHE_DIRECTORY_NOT_DEFINED);
+        }
+        $cacheDir = $config['basePath'].DIRECTORY_SEPARATOR.ltrim($cacheDir, '/');
+        $garbageCollector = function () use ($cacheDir) {
+            $io = $this->getLaravel()->get(OutputStyle::class);
+            $io->comment('Running cache garbage collecting task...');
+            $cleanedFiles = 0;
+            foreach (Finder::create()->in($cacheDir)->files()->getIterator() as $file) {
+                $expireTime = (int)explode('b:', $file->getContents(), 2)[0] ?? 0;
+                if ($expireTime && time() > $expireTime) {
+                    $cleanedFiles++;
+                    unlink($file->getRealPath());
+                }
+            }
+            $io->comment("Cleaned up: <comment>{$cleanedFiles}</comment> expired files");
+        };
+
+        $this->schedule->call($garbageCollector)
+            ->daily()
+            ->name($this->getUniqueName('file-cache', 'garbage-collector'))
+            ->onOneServer();
     }
 }

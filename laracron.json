@@ -9,7 +9,7 @@
     ]
   },
 
-  "log file": "php://stdout",
+  "log": "php://stdout",
   "cache.default": "file",
   "cache.prefix": "laracron",
   "cache.stores.file": {

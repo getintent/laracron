@@ -11,4 +11,5 @@ class ExitCodes
     const ERROR_CONFIG_JSON_ERROR = 202;
     const ERROR_CMD_DEFINITION = 203;
     const ERROR_PHAR_READONLY = 204;
+    const ERROR_CACHE_DIRECTORY_NOT_DEFINED = 205;
 }
