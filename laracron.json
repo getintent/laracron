@@ -1,15 +1,12 @@
 {
   "scheduledJobs": {
     "everyMinute": [
-      "app/console list",
-      "app/console"
+      "php --version"
     ],
-    "*/10 * * * *": [
-      "echo '*/10 * * * *'"
+    "* * * * *": [
     ]
   },
-
-  "log": "php://stdout",
+  "log": "cron.log",
   "cache.default": "file",
   "cache.prefix": "laracron",
   "cache.stores.file": {

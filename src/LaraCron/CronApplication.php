@@ -476,7 +476,10 @@ class CronApplication implements ApplicationContract
             throw new ExitCommandException('ERROR_CONFIG_JSON_ERROR', ExitCodes::ERROR_CONFIG_JSON_ERROR);
         }
 
-        $config['basePath'] = realpath(__DIR__ . '/../../');
+        $config['basePath'] = realpath('.');
+        if (isset($config['cache.stores.file']['path'])) {
+            $config['cache.stores.file']['path'] = $config['basePath'].DIRECTORY_SEPARATOR.ltrim($config['cache.stores.file']['path'], '/');
+        }
 
         return $config;
     }

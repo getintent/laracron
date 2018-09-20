@@ -8,8 +8,9 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Trig\LaraCron\Exception\ExitCommandException;
 use Trig\LaraCron\ExitCodes;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Container\Container;
 
-$configFile = realpath(__DIR__.'/../laracron.json');
+$configFile = realpath('.') . '/laracron.json';
 
 $io = new OutputStyle(
     new ArgvInput(),
@@ -18,6 +19,12 @@ $io = new OutputStyle(
 
 try {
     $cronApp = new \Trig\LaraCron\CronApplication($configFile);
+
+    function base_path($path = null)
+    {
+        $container = Container::getInstance();
+        return $container->get('config')['basePath'].($path ? DIRECTORY_SEPARATOR.$path : $path);
+    }
 
     $cronApp->booting(
         function (\Trig\LaraCron\CronApplication $app) use ($io) {

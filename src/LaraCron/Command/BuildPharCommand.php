@@ -48,14 +48,16 @@ class BuildPharCommand extends Command
             ->ignoreDotFiles(true);
 
         $pharFile = $basePath.'/laracron.phar';
-        $stubFile = $basePath.'/bin/laracron.php';
+        if (file_exists($pharFile)) {
+            unlink($pharFile);
+        }
 
         $this->output->progressAdvance(1);
         $phar = new \Phar($pharFile);
         $phar->buildFromIterator($files->getIterator(), $basePath);
 
         $this->output->progressAdvance(1);
-        $phar->setStub($phar->createDefaultStub($stubFile));
+        $phar->setStub($phar->createDefaultStub('bin/laracron.php'));
         $this->output->writeln("Build completed. Phar saved to <comment>{$pharFile}</comment>");
     }
 

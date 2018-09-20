@@ -16,9 +16,11 @@ class ScheduleRunCommand extends ParentCommand
         $config = $this->getLaravel()->get('config');
         foreach ($config['scheduledJobs'] ?? [] as $definition => $commands) {
             foreach ($commands as $command) {
-                $event = $this->schedule->exec($command)
+                $event = $this->schedule
+                    ->exec($command)
                     ->name($this->getUniqueName($definition, $command))
-                    ->onOneServer();
+                    ->onOneServer()
+                    ->appendOutputTo($config['log']);
 
                 $isCronDefinition = false !== strpos($definition, ' ');
 

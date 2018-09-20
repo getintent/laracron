@@ -13,10 +13,7 @@
   "autoload": {
     "psr-4": {
       "Trig\\": "src//"
-    },
-    "files": [
-      "src/functions.php"
-    ]
+    }
   },
   "authors": [
     {
