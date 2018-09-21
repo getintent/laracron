@@ -19,8 +19,11 @@ class ScheduleRunCommand extends ParentCommand
                 $event = $this->schedule
                     ->exec($command)
                     ->name($this->getUniqueName($definition, $command))
-                    ->onOneServer()
-                    ->appendOutputTo($config['log_to']);
+                    ->onOneServer();
+
+                if (isset($config['log_to']) && $config['log_to'] && file_exists($config['log_to'])) {
+                    $event->appendOutputTo($config['log_to']);
+                }
 
                 $isCronDefinition = false !== strpos($definition, ' ');
 
