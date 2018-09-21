@@ -6,14 +6,18 @@
     "* * * * *": [
     ]
   },
+  "cache.default": "redi",
   "log": "cron.log",
-  "cache.default": "file",
   "cache.prefix": "laracron",
   "cache.stores.file": {
     "driver": "file",
     "path": "cache"
   },
   "cache.stores.redis": {
-    "driver": "redis"
+    "driver": "redis",
+    "host": "localhost",
+    "password": null,
+    "port": 6379,
+    "database": 0
   }
 }

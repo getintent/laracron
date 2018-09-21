@@ -26,14 +26,6 @@ try {
         return $container->get('config')['basePath'].($path ? DIRECTORY_SEPARATOR.$path : $path);
     }
 
-    $cronApp->booting(
-        function (\Trig\LaraCron\CronApplication $app) use ($io) {
-            if ('redis' === ($app->get('config')['cache.default'] ?? null) && !class_exists('Redis')) {
-                $io->writeln('<fg=red>ERROR:</> Please install Redis extension, to use with provided configuration');
-            }
-        }
-    );
-
     $cronApp->booted(
         function (\Trig\LaraCron\CronApplication $app)use ($cronApp) {
             $console = $app->get(\Illuminate\Console\Application::class);

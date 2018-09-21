@@ -15,6 +15,7 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Redis\RedisManager;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Trig\LaraCron\Exception\ExitCommandException;
@@ -46,9 +47,8 @@ class CronApplication implements ApplicationContract
     public function __construct(string $configFile)
     {
         $this->container = Container::getInstance();
-        $this->initializeBindings();
-
         $this->container['config'] = $this->getConfig($configFile);
+        $this->initializeBindings();
 
         foreach ($this->bootingCallbacks as $callback) {
             $callback($this);
@@ -172,7 +172,6 @@ class CronApplication implements ApplicationContract
         $app->add($scheduledRun);
         $scheduledRun->setLaravel($this);
 
-        $this->registerScheduledCommands();
         foreach ($this->bootedCallbacks as $callback) {
             $callback($this);
         }
@@ -216,12 +215,6 @@ class CronApplication implements ApplicationContract
     public function get($id)
     {
         return $this->container->get($id);
-    }
-
-    private function registerScheduledCommands()
-    {
-        $this->checkConfigPath('scheduledJobs');
-
     }
 
     /**
@@ -458,6 +451,16 @@ class CronApplication implements ApplicationContract
      */
     private function getConfig(string $configFile): array
     {
+        $this->bind(
+            OutputStyle::class,
+            function () {
+                return new OutputStyle(
+                    new ArgvInput(),
+                    new ConsoleOutput()
+                );
+            },
+            true
+        );
         $io = $this->get(OutputStyle::class);
 
         if (!$configFile || !file_exists($configFile)) {
@@ -486,17 +489,6 @@ class CronApplication implements ApplicationContract
 
     private function initializeBindings()
     {
-        $this->bind(
-            OutputStyle::class,
-            function () {
-                return new OutputStyle(
-                    new ArgvInput(),
-                    new ConsoleOutput()
-                );
-            },
-            true
-        );
-
         $this->bind(
             Application::class,
             function (Container $container) {
@@ -534,6 +526,22 @@ class CronApplication implements ApplicationContract
 
         $this->bind(Filesystem::class, null, true);
         $this->alias(Filesystem::class, 'files');
+
+        $config = $this->get('config');
+
+        if('redis' === $config['cache.default']){
+            if (!class_exists('Redis')) {
+                throw new ExitCommandException(
+                    'Please install Redis extension, to use with provided configuration',
+                    ExitCodes::ERROR_CACHE_DIRECTORY_NOT_DEFINED
+                );
+            }
+            $redisConfig = $config['cache.stores.redis'];
+            $this->bind('redis', function() use ($redisConfig){
+                return new RedisManager($this, 'predis', $redisConfig);
+            }, true);
+        }
+
     }
 
 }
