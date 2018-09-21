@@ -1,5 +1,6 @@
 {
   "name": "trig/laracron",
+  "description":"This tool adds a capability to manage your Cron-based CLI tasks via simple JSON configuration",
   "require": {
     "illuminate/console": "^5.7",
     "illuminate/container": "^5.7",
