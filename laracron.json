@@ -6,13 +6,17 @@
     "* * * * *": [
     ]
   },
-  "cache.default": "redi",
-  "log": "cron.log",
+
+  "cache.default": "file",
+
+  "log_to": "laracron_cache/laracron.log",
   "cache.prefix": "laracron",
+
   "cache.stores.file": {
     "driver": "file",
-    "path": "cache"
+    "path": "laracron_cache"
   },
+
   "cache.stores.redis": {
     "driver": "redis",
     "host": "localhost",

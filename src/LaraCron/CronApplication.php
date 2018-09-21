@@ -484,6 +484,10 @@ class CronApplication implements ApplicationContract
             $config['cache.stores.file']['path'] = $config['basePath'].DIRECTORY_SEPARATOR.ltrim($config['cache.stores.file']['path'], '/');
         }
 
+        if (isset($config['log_to'])) {
+            $config['log_to'] = $config['basePath'].DIRECTORY_SEPARATOR.ltrim($config['log_to'], '/');
+        }
+
         return $config;
     }
 
@@ -529,7 +533,7 @@ class CronApplication implements ApplicationContract
 
         $config = $this->get('config');
 
-        if('redis' === $config['cache.default']){
+        if ('redis' === $config['cache.default']) {
             if (!class_exists('Redis')) {
                 throw new ExitCommandException(
                     'Please install Redis extension, to use with provided configuration',
@@ -537,9 +541,13 @@ class CronApplication implements ApplicationContract
                 );
             }
             $redisConfig = $config['cache.stores.redis'];
-            $this->bind('redis', function() use ($redisConfig){
-                return new RedisManager($this, 'predis', $redisConfig);
-            }, true);
+            $this->bind(
+                'redis',
+                function () use ($redisConfig) {
+                    return new RedisManager($this, 'predis', $redisConfig);
+                },
+                true
+            );
         }
 
     }

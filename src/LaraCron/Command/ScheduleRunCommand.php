@@ -20,7 +20,7 @@ class ScheduleRunCommand extends ParentCommand
                     ->exec($command)
                     ->name($this->getUniqueName($definition, $command))
                     ->onOneServer()
-                    ->appendOutputTo($config['log']);
+                    ->appendOutputTo($config['log_to']);
 
                 $isCronDefinition = false !== strpos($definition, ' ');
 

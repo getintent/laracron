@@ -5,7 +5,6 @@ namespace Trig\LaraCron\Command;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Process;
 use Trig\LaraCron\ExitCodes;
 
 class BuildPharCommand extends Command

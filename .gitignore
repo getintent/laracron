@@ -1,4 +1,4 @@
 vendor
-cache
+laracron_cache
 .idea
 *.phar
