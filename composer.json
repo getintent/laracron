@@ -16,6 +16,9 @@
       "Trig\\": "src//"
     }
   },
+  "bin": [
+    "bin/laracron.php"
+  ],
   "authors": [
     {
       "name": "Andrey",
