@@ -19,9 +19,10 @@ class ScheduleRunCommand extends ParentCommand
                 $event = $this->schedule
                     ->exec($command)
                     ->name($this->getUniqueName($definition, $command))
-                    ->onOneServer();
+                    ->onOneServer()
+                    ->withoutOverlapping();
 
-                if (isset($config['log_to']) && $config['log_to'] && file_exists($config['log_to'])) {
+                if (isset($config['log_to']) && $config['log_to']) {
                     $event->appendOutputTo($config['log_to']);
                 }
 
@@ -34,6 +35,9 @@ class ScheduleRunCommand extends ParentCommand
                 } else {
                     $this->output->writeln("<fg=red>ERROR:</> Seems that command schedule definition <comment>{$definition}</comment> is wrong for <comment>{$command}</comment> command");
                     throw new ExitCommandException('ERROR_CMD_DEFINITION', ExitCodes::ERROR_CMD_DEFINITION);
+                }
+                if ($this->output->isDebug()) {
+                    $this->output->writeln("Scheduled <comment>{$command}</comment> command to run every <fg=blue>{$definition}</>");
                 }
             }
         }

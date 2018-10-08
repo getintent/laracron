@@ -544,7 +544,7 @@ class CronApplication implements ApplicationContract
             $this->bind(
                 'redis',
                 function () use ($redisConfig) {
-                    return new RedisManager($this, 'predis', $redisConfig);
+                    return new RedisManager($this, 'predis', ['default' => $redisConfig]);
                 },
                 true
             );
